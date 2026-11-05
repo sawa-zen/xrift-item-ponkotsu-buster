@@ -1,0 +1,9 @@
+{
+  "item": {
+    "distDir": "./dist",
+    "buildCommand": "npm run build",
+    "title": "ポンコツバスター",
+    "description": "掴んで撃てる、ためうちバスター。持って「使う」を押している間ためて、離すと撃つ。ためるほど弾が大きくなる（Grabbable の onUseStart / onUseEnd のサンプル）",
+    "thumbnailPath": "thumbnail.png"
+  }
+}
