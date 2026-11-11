@@ -1,6 +1,6 @@
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
-import { AdditiveBlending, type Group, type MeshBasicMaterial } from 'three'
+import { AdditiveBlending, type Group, type MeshBasicMaterial, Vector3 } from 'three'
 import {
   CHARGE_BALL_OFFSET,
   MUZZLE_OFFSET,
@@ -11,6 +11,10 @@ import type { ShotLevel } from './utils'
 
 export interface ShotData {
   key: number
+  /** 全員の画面で同じ弾を指す id（当たったときに消すのに使う） */
+  id: string
+  /** 自分が撃った弾か（自分の弾は自分に当たらない。送るときは含めない） */
+  isMine: boolean
   /** 銃口の位置（アイテムのローカル座標） */
   origin: [number, number, number]
   /** 飛ぶ向き（長さ 1） */
@@ -21,10 +25,17 @@ export interface ShotData {
 interface Props {
   shot: ShotData
   onDone: (key: number) => void
+  /**
+   * 毎フレーム、弾の中心（ワールド座標）と半径を渡して当たったかを聞く。
+   * true を返したら、その弾はもう当たり判定をしない
+   */
+  checkHit?: (shot: ShotData, worldPosition: Vector3, radius: number) => boolean
 }
 
+const _worldPosition = new Vector3()
+
 /** 強さごとの弾の大きさ[m]と色 */
-const SHOT_LOOKS: Record<ShotLevel, { radius: number; color: string }> = {
+export const SHOT_LOOKS: Record<ShotLevel, { radius: number; color: string }> = {
   0: { radius: 0.025, color: '#ffd166' },
   1: { radius: 0.055, color: '#ff9a3c' },
   2: { radius: 0.26, color: '#c8ff6a' },
@@ -34,11 +45,12 @@ const SHOT_LOOKS: Record<ShotLevel, { radius: number; color: string }> = {
 const BIG_SHOT_START_AHEAD = CHARGE_BALL_OFFSET - MUZZLE_OFFSET
 
 /** 弾ひとつ。まっすぐ飛んで寿命で消える */
-export function Shot({ shot, onDone }: Props) {
+export function Shot({ shot, onDone, checkHit }: Props) {
   const groupRef = useRef<Group>(null)
   const materialRef = useRef<MeshBasicMaterial>(null)
   const ageRef = useRef(0)
   const doneRef = useRef(false)
+  const hitRef = useRef(false)
 
   useFrame((_, delta) => {
     const group = groupRef.current
@@ -62,6 +74,12 @@ export function Shot({ shot, onDone }: Props) {
     // フルチャージ弾はぶるぶる大きさが揺れる
     if (shot.level === 2) group.scale.setScalar(1 + Math.sin(age * 40) * 0.12)
     if (materialRef.current) materialRef.current.opacity = 1 - age / lifetime
+
+    if (checkHit && !hitRef.current) {
+      // フルチャージ弾は見た目どおり大きく当たる（ぶるぶるは無視）
+      const radius = SHOT_LOOKS[shot.level].radius
+      hitRef.current = checkHit(shot, group.getWorldPosition(_worldPosition), radius)
+    }
   })
 
   const look = SHOT_LOOKS[shot.level]

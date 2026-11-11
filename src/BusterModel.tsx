@@ -13,6 +13,7 @@ import {
   CHARGE_BALL_OFFSET,
   REMOTE_CHARGE_TIMEOUT,
 } from './constants'
+import { MAX_HP } from './battle'
 import { toChargeRatio } from './utils'
 
 /** ためている状態（再描画せずに毎フレーム読むので、オブジェクトを書き換えて使う） */
@@ -23,8 +24,31 @@ export interface ChargeState {
   isRemote: boolean
 }
 
+/** バスターのランプが示す HP（持っている人の HP。再描画せずに毎フレーム読む） */
+export interface HpState {
+  value: number
+}
+
 interface Props {
   charge: ChargeState
+  hp: HpState
+}
+
+/** HP ランプの並び（筒の上、ゲージより前に一列） */
+const LAMP_START_Z = -0.025
+const LAMP_SPACING = 0.022
+const LAMP_Y = 0.061
+
+/** ランプの色（残りが少ないほど赤く、最後の1つは点滅する） */
+const LAMP_OFF = new Color('#2b2b2b')
+const LAMP_HIGH = new Color('#5dff7a')
+const LAMP_MIDDLE = new Color('#ffd23f')
+const LAMP_LOW = new Color('#ff3b3b')
+
+function lampColor(hp: number): Color {
+  if (hp >= 3) return LAMP_HIGH
+  if (hp === 2) return LAMP_MIDDLE
+  return LAMP_LOW
 }
 
 const HALF_PI = Math.PI / 2
@@ -61,7 +85,7 @@ export function readChargeSeconds(charge: ChargeState): number | null {
  * 腕に差し込んで使う（持ち手は無い）。
  * ためている間は銃口の前に光の玉がふくらんでゲージの針が上がり、フルチャージでガタガタ震える
  */
-export function BusterModel({ charge }: Props) {
+export function BusterModel({ charge, hp }: Props) {
   const bodyRef = useRef<Group>(null)
   const glowRef = useRef<Mesh>(null)
   const needleRef = useRef<Group>(null)
@@ -79,6 +103,12 @@ export function BusterModel({ charge }: Props) {
     [],
   )
   useEffect(() => () => sparkMaterial.dispose(), [sparkMaterial])
+  // ランプはひとつずつ色を変えるので、材質を分ける
+  const lampMaterials = useMemo(
+    () => Array.from({ length: MAX_HP }, () => new MeshBasicMaterial({ toneMapped: false })),
+    [],
+  )
+  useEffect(() => () => lampMaterials.forEach((material) => material.dispose()), [lampMaterials])
 
   useFrame(({ clock }) => {
     const seconds = readChargeSeconds(charge)
@@ -110,6 +140,13 @@ export function BusterModel({ charge }: Props) {
         sparkMaterial.color.copy(_glow)
       }
     }
+
+    // HP ランプ（残っている数だけ点ける。残り1つは点滅）
+    const blink = hp.value === 1 && Math.sin(clock.elapsedTime * 12) < 0
+    const lit = lampColor(hp.value)
+    lampMaterials.forEach((material, i) => {
+      material.color.copy(i < hp.value && !blink ? lit : LAMP_OFF)
+    })
 
     if (needleRef.current) needleRef.current.rotation.z = NEEDLE_SWING / 2 - ratio * NEEDLE_SWING
 
@@ -182,6 +219,16 @@ export function BusterModel({ charge }: Props) {
           </mesh>
         </group>
       </group>
+      {/* HP ランプ（減ると手元側から消えていく） */}
+      {lampMaterials.map((material, i) => (
+        <mesh
+          key={i}
+          position={[0, LAMP_Y, LAMP_START_Z - (MAX_HP - 1 - i) * LAMP_SPACING]}
+          material={material}
+        >
+          <sphereGeometry args={[0.008, 10, 8]} />
+        </mesh>
+      ))}
       {/* 銃口の光（ためている間だけ） */}
       <mesh ref={glowRef} position={[0, 0, -CHARGE_BALL_OFFSET]} visible={false}>
         <sphereGeometry args={[0.05, 16, 12]} />

@@ -175,3 +175,25 @@ export function startChargeSound(volume: number): ChargeSound | null {
     },
   }
 }
+
+/** 当たった音（バチッという破裂音と、低いドスッ） */
+export function playHitSound(volume: number): void {
+  const audio = getAudio()
+  if (!audio || volume <= 0) return
+  const { ctx } = audio
+  const out = withVolume(ctx, audio.out, volume)
+  playNoise(ctx, out, { duration: 0.18, volume: 0.7, filterFrequency: 6000 })
+  playSweep(ctx, out, { type: 'triangle', from: 220, to: 50, duration: 0.25, volume: 0.6 })
+  playSweep(ctx, out, { type: 'square', from: 1800, to: 900, duration: 0.06, volume: 0.2 })
+}
+
+/** 倒れた音（ドカーンという爆発と、しぼんでいく電子音） */
+export function playKoSound(volume: number): void {
+  const audio = getAudio()
+  if (!audio || volume <= 0) return
+  const { ctx } = audio
+  const out = withVolume(ctx, audio.out, volume)
+  playNoise(ctx, out, { duration: 1.1, volume: 0.9, filterFrequency: 700 })
+  playSweep(ctx, out, { type: 'sawtooth', from: 160, to: 30, duration: 0.9, volume: 0.7 })
+  playSweep(ctx, out, { type: 'square', from: 900, to: 60, duration: 0.8, volume: 0.25 })
+}
