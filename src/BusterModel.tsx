@@ -15,7 +15,7 @@ import {
 } from './constants'
 import { toChargeRatio } from './utils'
 
-/** ためている状態（実体と手元の代わりの両方で同じものを読む） */
+/** ためている状態（再描画せずに毎フレーム読むので、オブジェクトを書き換えて使う） */
 export interface ChargeState {
   /** ため始めた時刻[秒]（performance.now 基準）。ためていなければ null */
   startedAt: number | null

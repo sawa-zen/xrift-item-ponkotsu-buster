@@ -1,7 +1,7 @@
 {
   "name": "@xrift/item-ponkotsu-buster",
   "version": "0.1.0",
-  "description": "掴んで撃てる、ためうちバスター（onUseStart / onUseEnd のサンプル）",
+  "description": "掴んで撃てる、ためうちバスター（onUseStart / onUseEnd / onGrab / onRelease のサンプル）",
   "type": "module",
   "main": "./dist/remoteEntry.js",
   "module": "./dist/remoteEntry.js",
@@ -51,6 +51,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@xrift/world-components": "^0.62.0"
+    "@xrift/world-components": "^0.64.0"
   }
 }

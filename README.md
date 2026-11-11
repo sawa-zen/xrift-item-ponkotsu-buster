@@ -1,6 +1,6 @@
 # ポンコツバスター
 
-腕に差し込んで撃つ、ためうちバスターの XRift アイテムです。`Grabbable` の `onUseStart` / `onUseEnd`（`@xrift/world-components` 0.62.0 以降）のサンプルを兼ねています。
+腕に差し込んで撃つ、ためうちバスターの XRift アイテムです。`Grabbable` の `onUseStart` / `onUseEnd` / `onGrab` / `onRelease`（`@xrift/world-components` 0.64.0 以降）のサンプルを兼ねています。
 
 ## 遊び方
 
@@ -18,7 +18,7 @@
 - `onUseStart` でため始めの時刻を覚え、`onUseEnd` でためた秒数から弾を決めて撃つ（`src/Item.tsx`）
 - `onUseStart` / `onUseEnd` は持っている本人の画面でだけ呼ばれる。ためている様子と弾は `useInstanceEvent` でほかの人に送る。送った本人には届かないので、自分の画面には直接出す
 - 弾の向きは `onUseEnd` の `transform`（アイテムのローカル座標）の -Z。弾もアイテムの中に描くので、座標を変換しなくてよい
-- ためている状態は、置いてある実体と手元の代わり（`renderGhost` を省略すると `children` を使い回す）の両方が同じオブジェクトを読む
+- 持っている間は `children` そのものが持ち主の手元に動く（0.64.0 で `renderGhost` は廃止）。操作説明は `onGrab` / `onRelease`（全員の画面で呼ばれる）で持っている間だけ外す
 
 ## 開発
 

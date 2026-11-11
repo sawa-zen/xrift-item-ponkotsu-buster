@@ -27,7 +27,7 @@ const _soundPosition = new Vector3()
 const _listenerPosition = new Vector3()
 const _euler = new Euler()
 
-/** ためている状態を書き換える（実体と手元の代わりが同じオブジェクトを読むので、作り直さない） */
+/** ためている状態を書き換える（毎フレーム BusterModel が同じオブジェクトを読むので、作り直さない） */
 function setCharge(charge: ChargeState, startedAt: number | null, isRemote: boolean): void {
   charge.startedAt = startedAt
   charge.isRemote = isRemote
@@ -42,13 +42,16 @@ function setCharge(charge: ChargeState, startedAt: number | null, isRemote: bool
  * - ためた長さで弾が3段階に大きくなる
  * - 弾とためている様子は useInstanceEvent でほかの人にも見せる
  *   （onUseStart / onUseEnd は持っている本人の画面でだけ呼ばれるため）
- * - 置いてある間は上に操作説明を出す（持つと消える）
+ * - 置いてある間は上に操作説明を出す（onGrab / onRelease で切り替え、持つと消える）
+ * - 持っている間は children そのものが持ち主の手元に動く（0.64.0 以降）
  * - ID は設置ごとに変える（2つ置いても別の物として持てる・知らせも混ざらない）
  */
 export const Item = () => {
   const { id } = useItem()
   const chargeRef = useRef<ChargeState>({ startedAt: null, isRemote: false })
   const [shots, setShots] = useState<ShotData[]>([])
+  /** 誰かが持っている（持っている間は操作説明を出さない） */
+  const [isHeld, setIsHeld] = useState(false)
   const nextKeyRef = useRef(0)
   const groupRef = useRef<Group>(null)
   const chargeSoundRef = useRef<ChargeSound | null>(null)
@@ -150,8 +153,9 @@ export const Item = () => {
     [addShot, emit, stopChargeSound],
   )
 
-  // 手元には見た目だけ出す（操作説明は置いてある間だけ）
-  const renderGhost = useCallback(() => <BusterModel charge={chargeRef.current} />, [])
+  // onGrab / onRelease は全員の画面で呼ばれるので、ほかの人が持っている間も操作説明が消える
+  const handleGrab = useCallback(() => setIsHeld(true), [])
+  const handleRelease = useCallback(() => setIsHeld(false), [])
 
   return (
     <group ref={groupRef}>
@@ -160,10 +164,11 @@ export const Item = () => {
         transform={INITIAL_TRANSFORM}
         onUseStart={handleUseStart}
         onUseEnd={handleUseEnd}
-        renderGhost={renderGhost}
+        onGrab={handleGrab}
+        onRelease={handleRelease}
       >
         <BusterModel charge={chargeRef.current} />
-        <HowToPanel />
+        {!isHeld && <HowToPanel />}
       </Grabbable>
       {shots.map((shot) => (
         <Shot key={shot.key} shot={shot} onDone={removeShot} />

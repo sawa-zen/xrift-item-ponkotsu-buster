@@ -27,8 +27,8 @@ const _cameraPosition = new Vector3()
 
 /**
  * 置いてあるバスターの上に出す操作説明。いつもこちらを向く。
- * <Grabbable> の children の中に置くので、誰かが持っている間は実体ごと隠れる
- * （手元の代わりには renderGhost で見た目だけを渡しているので、手には出ない）
+ * 誰かが持っている間は Item 側で外す（onGrab / onRelease で切り替える。
+ * 0.64.0 以降は children そのものが手元に動くので、外さないと手元に出てしまう）
  */
 export function HowToPanel() {
   const groupRef = useRef<Group>(null)
